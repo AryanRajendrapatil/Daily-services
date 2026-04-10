@@ -121,4 +121,28 @@ const userCancelBooking=async(req,res)=>{
         }
     }
 
-module.exports={createBooking,updateBooking,userCancelBooking,workerCancelBooking}
+    const getUserBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find({ userId: req.params.userId });
+    res.status(200).json({ bookings });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getWorkerBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find({ workerId: req.params.workerId });
+    res.status(200).json({ bookings });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  createBooking, updateBooking, userCancelBooking,
+  workerCancelBooking, getUserBookings, getWorkerBookings
+};
+
+
+module.exports={createBooking,updateBooking,userCancelBooking,workerCancelBooking,getUserBookings,getWorkerBookings}

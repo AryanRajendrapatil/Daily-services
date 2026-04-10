@@ -184,24 +184,8 @@ const deleteWorker=async(req,res)=>{
     }
 }
 
-const getWorker=async(req,res)=>{
-    try{
-        const {email}=req.body;
-        if(!email){
-            return res.status(400).json({message:"Email is required"});
-        }
-        const worker=await Worker.findOne({email});
-        if(!worker){
-            return res.status(400).json({message:"Worker not found"});
-        }
-        res.status(200).json({
-            message:"Worker found successfully",
-            worker:worker
-        });
-    }catch(error){
-        errorHandler(error,req,res,next)
-    }
-}
+
+
 const changePassword=async(req,res)=>{
     try{
         const {email,password}=req.body;
@@ -228,12 +212,47 @@ const changePassword=async(req,res)=>{
     }
 }
 
+const getAllWorkers = async (req, res) => {
+  try {
+    const workers = await Worker.find().select("-password");
+    res.status(200).json({ workers });
+  } catch (error) {
+    errorHandler(error,req,res,next)
+  }
+};
+
+const getWorkersByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+    const workers = await Worker.find({ serviceType: category }).select("-password");
+    res.status(200).json({ workers });
+  } catch (error) {
+    errorHandler(error,req,res,next)
+  }
+};
+
+const getWorkerById = async (req, res) => {
+  try {
+    const worker = await Worker.findById(req.params.id).select("-password");
+    if (!worker) return res.status(404).json({ message: "Worker not found" });
+    res.status(200).json({ worker });
+  } catch (error) {
+    errorHandler(error,req,res,next)
+  }
+};
+
+
+
+
+
 module.exports={
     createWorker,
     loginWorker,
     logoutWorker,
     updateWorker,
     deleteWorker,
-    getWorker,
-    changePassword
+    changePassword,
+    getAllWorkers,
+    getWorkersByCategory,
+    getWorkerById
 }
