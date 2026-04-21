@@ -1,0 +1,18 @@
+.category-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cat-breakdown-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+}
+.cat-breakdown-info { flex: 1; }
+.cat-breakdown-name { font-size: 13px; font-weight: 500; text-transform: capitalize; }
+.cat-breakdown-count { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.cat-bar-wrap { width: 120px; height: 4px; background: var(--bg2); border-radius: 2px; overflow: hidden; }
+.cat-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.5s ease; }
+.cat-pct { font-size: 12px; color: var(--accent); font-weight: 600; width: 36px; text-align: right; }
+.doc-preview { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--text2); display: flex; align-items: center; justify-content: space-between; }
