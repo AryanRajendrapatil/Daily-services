@@ -1,24 +1,28 @@
-const User = require("../models/user.model");
+const User = require("../models/User.model");
 const errorHandler = require("../middlewares/error.middleware.js");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const upload = require("../middlewares/upload.middleware.js");
-const uploadToCloudinary = require("../middlewares/upload.middleware.js");
+const {upload,uploadToCloudinary,deleteFromCloudinary,deleteMultipleFromCloudinary} = require("../middlewares/upload.middleware.js");
 const dotenv=require("dotenv");
+const fs = require("fs");
 
 dotenv.config();
 
 
 
 const createUser=async(req,res)=>{
-    try{
-        const {name,email,password }=req.body;
-        const file=req.file;
-        const result=await uploadToCloudinary(file.path);
-       
-        if(!name || !email || !password){
-            return res.status(400).json({message:"All fields are required"});
+    try {
+        if (!req.body) {
+            return res.status(400).json({ message: "Request body is missing" });
         }
+
+        const { name, email, password, phone } = req.body;
+        const file = req.file;
+
+        if (!name || !email || !password || !phone) {
+            return res.status(400).json({ message: "All fields are required (name, email, password, phone)" });
+        }
+
         const user=await User.findOne({email});
         if(user){
             return res.status(400).json({message:"User already exists"});
@@ -26,25 +30,32 @@ const createUser=async(req,res)=>{
         if(password.length<6){
             return res.status(400).json({message:"Password must be at least 6 characters long"});
         } 
-        if(!file){
-            return res.status(400).json({message:"Image is required"});
+        if (!file) {
+            return res.status(400).json({ message: "Image is required" });
         }
-        const salt=await bcryptjs.genSalt(10);
-        const hashedPassword=await bcryptjs.hash(password,salt);
-        const newUser=new User({
+
+        const result = await uploadToCloudinary(file.path);
+
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPassword = await bcryptjs.hash(password, salt);
+        const newUser = new User({
             name,
             email,
-            password:hashedPassword,
-            image:result.secure_url
+            password: hashedPassword,
+            phone,
+            image: result.secure_url
         });
+
         await newUser.save();
         res.status(201).json({
             message:"User created successfully",
             user:newUser
             
         });
+        fs.unlinkSync(file.path);
+
     }catch(error){
-        errorHandler(error,req,res,next)
+        errorHandler(error,req,res)
     }
 }
 
@@ -56,7 +67,7 @@ const updateUser=async(req,res)=>{
         res.status(200).json(user);
 
     } catch (error) {
-        errorHandler(error,req,res,next)
+        errorHandler(error, req, res);
     }
 }
 
@@ -65,7 +76,7 @@ const deleteUser=async(req,res)=>{
         const user=await User.findByIdAndDelete(req.params.id);
         res.status(200).json(user);
     } catch (error) {
-       errorHandler(error,req,res,next)
+       errorHandler(error, req, res);
     }
 
 }
@@ -78,7 +89,7 @@ const getUser=async(req,res)=>{
         const user=await User.findById(req.params.id);
         res.status(200).json(user);
     } catch (error) {
-       errorHandler(error,req,res,next)
+       errorHandler(error, req, res);
     }
 }
 
@@ -160,6 +171,7 @@ const changeImage=async(req,res)=>{
             message:"Image changed successfully",
             user:updatedUser
         });
+        fs.unlinkSync(file.path);
     }catch(error){
         errorHandler(error,req,res,next)
     }

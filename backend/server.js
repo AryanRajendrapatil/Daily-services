@@ -23,11 +23,18 @@ const userRoute = require("./routes/user.route.js");
 const workerRoute = require("./routes/worker.route.js");
 const adminRoute = require("./routes/admin.route.js");
 const bookingRoute = require("./routes/booking.route.js");
+const reviewRoute = require("./routes/review.route.js");
 
 app.use("/api/user", userRoute);
 app.use("/api/worker", workerRoute);
 app.use("/api/admin", adminRoute);
 app.use("/api/booking", bookingRoute);
+app.use("/api/review", reviewRoute);
+
+
+//connect to database
+const connectDB = require("./models/connectDB.js");
+connectDB();
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

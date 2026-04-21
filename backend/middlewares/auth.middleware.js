@@ -3,16 +3,16 @@ const errorHandler = require("../middlewares/error.middleware.js");
 
 
 const protect = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "No token provided, authorization denied" });
 
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
-
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  req.user = decoded;
-  const loginToken=jwt.sign({id:user._id},process.env.JWT_SECRET,{expiresIn:"1h"});
-          res.status(200).json({loginToken,user});
-
-  next();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Contains the 'id' of the user
+    next();
+  } catch (error) {
+    res.status(401).json({ message: "Token is not valid" });
+  }
 };
 const loginToken=async(req,res)=>{
     try{

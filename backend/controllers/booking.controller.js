@@ -1,4 +1,4 @@
-const User=require("../models/user.model");
+const User=require("../models/User.model");
 const Worker=require("../models/worker.model");
 const Booking=require("../models/booking.model");
 
@@ -35,114 +35,111 @@ const createBooking=async(req,res)=>{
             message:"Booking created successfully",
             booking:booking
         });
-    }catch(error){
-        errorHandler(error,req,res,next)
+    } catch (error) {
+        errorHandler(error, req, res);
     }
 
 }
 
-const updateBooking=async(req,res)=>{
-    try{
-        const {bookingId,bookingStatus,paymentStatus}=req.body;
-        if(!bookingId || !bookingStatus ){
-            return res.status(400).json({message:"All fields are required"});
+const updateBooking = async (req, res) => {
+    try {
+        const { bookingId, bookingStatus, paymentStatus } = req.body;
+        if (!bookingId || !bookingStatus) {
+            return res.status(400).json({ message: "All fields are required" });
         }
-        const booking=await Booking.findById(bookingId);
-        if(!booking){
-            return res.status(400).json({message:"Booking not found"});
+        const booking = await Booking.findById(bookingId);
+        if (!booking) {
+            return res.status(400).json({ message: "Booking not found" });
         }
-        if(booking.workerId.toString()!==req.user.id.toString() || booking.userId.toString()!==req.user.id.toString()){
-            return res.status(400).json({message:"You are not authorized to update this booking"});
+        if (booking.workerId.toString() !== req.user.id.toString() || booking.userId.toString() !== req.user.id.toString()) {
+            return res.status(400).json({ message: "You are not authorized to update this booking" });
         }
-        const updatedBooking=await Booking.findByIdAndUpdate(bookingId,{
+        const updatedBooking = await Booking.findByIdAndUpdate(bookingId, {
             bookingStatus
-        },{new:true});
+        }, { new: true });
         res.status(200).json({
-            message:"Booking updated successfully",
-            booking:updatedBooking
+            message: "Booking updated successfully",
+            booking: updatedBooking
         });
-    }catch(error){
-        errorHandler(error,req,res,next)
+    } catch (error) {
+        errorHandler(error, req, res);
     }
 }
 
-const userCancelBooking=async(req,res)=>{
-    try{
-        const {bookingId}=req.body;
-        if(!bookingId){
-            return res.status(400).json({message:"Booking ID is required"});
+const userCancelBooking = async (req, res) => {
+    try {
+        const { bookingId } = req.body;
+        if (!bookingId) {
+            return res.status(400).json({ message: "Booking ID is required" });
         }
-        const booking=await Booking.findById(bookingId);
-        if(!booking){
-            return res.status(400).json({message:"Booking not found"});
+        const booking = await Booking.findById(bookingId);
+        if (!booking) {
+            return res.status(400).json({ message: "Booking not found" });
         }
-        if(booking.userId.toString()!==req.user.id.toString() || booking.workerId.toString()!==req.user.id.toString()){
-            return res.status(400).json({message:"You are not authorized to cancel this booking"});
+        if (booking.userId.toString() !== req.user.id.toString() || booking.workerId.toString() !== req.user.id.toString()) {
+            return res.status(400).json({ message: "You are not authorized to cancel this booking" });
         }
-        if(booking.bookingStatus==="completed"){
-            return res.status(400).json({message:"Booking cannot be cancelled as it is completed"});
+        if (booking.bookingStatus === "completed") {
+            return res.status(400).json({ message: "Booking cannot be cancelled as it is completed" });
         }
 
-        await Booking.findByIdAndUpdate(bookingId,{
-            bookingStatus:"cancelled"
-        },{new:true});
-        res.status(200).json({message:"Booking cancelled successfully"});
-    }catch(error){
-        errorHandler(error,req,res,next)
+        await Booking.findByIdAndUpdate(bookingId, {
+            bookingStatus: "cancelled"
+        }, { new: true });
+        res.status(200).json({ message: "Booking cancelled successfully" });
+    } catch (error) {
+        errorHandler(error, req, res);
     }
 }
 
-    const workerCancelBooking=async(req,res)=>{
-        try{
-            const {bookingId}=req.body;
-            if(!bookingId){
-                return res.status(400).json({message:"Booking ID is required"});
-            }
-            const booking=await Booking.findById(bookingId);
-            if(!booking){
-                return res.status(400).json({message:"Booking not found"});
-            }
-            if(booking.workerId.toString()!==req.user.id.toString()){
-                return res.status(400).json({message:"You are not authorized to cancel this booking"});
-            }
-            if(booking.bookingStatus==="completed"){
-                return res.status(400).json({message:"Booking cannot be cancelled as it is completed"});
-            }
-            const updatedBooking=await Booking.findByIdAndUpdate(bookingId,{
-                bookingStatus:"cancelled"
-            },{new:true});
-            res.status(200).json({
-                message:"Booking cancelled successfully",
-                booking:updatedBooking
-
-            });
-        }catch(error){
-            errorHandler(error,req,res,next)
+const workerCancelBooking = async (req, res) => {
+    try {
+        const { bookingId } = req.body;
+        if (!bookingId) {
+            return res.status(400).json({ message: "Booking ID is required" });
         }
-    }
+        const booking = await Booking.findById(bookingId);
+        if (!booking) {
+            return res.status(400).json({ message: "Booking not found" });
+        }
+        if (booking.workerId.toString() !== req.user.id.toString()) {
+            return res.status(400).json({ message: "You are not authorized to cancel this booking" });
+        }
+        if (booking.bookingStatus === "completed") {
+            return res.status(400).json({ message: "Booking cannot be cancelled as it is completed" });
+        }
+        const updatedBooking = await Booking.findByIdAndUpdate(bookingId, {
+            bookingStatus: "cancelled"
+        }, { new: true });
+        res.status(200).json({
+            message: "Booking cancelled successfully",
+            booking: updatedBooking
 
-    const getUserBookings = async (req, res) => {
-  try {
-    const bookings = await Booking.find({ userId: req.params.userId });
-    res.status(200).json({ bookings });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+        });
+    } catch (error) {
+        errorHandler(error, req, res);
+    }
+}
+
+const getUserBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.find({ userId: req.params.userId });
+        res.status(200).json({ bookings });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 const getWorkerBookings = async (req, res) => {
-  try {
-    const bookings = await Booking.find({ workerId: req.params.workerId });
-    res.status(200).json({ bookings });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    try {
+        const bookings = await Booking.find({ workerId: req.params.workerId });
+        res.status(200).json({ bookings });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 module.exports = {
-  createBooking, updateBooking, userCancelBooking,
-  workerCancelBooking, getUserBookings, getWorkerBookings
+    createBooking, updateBooking, userCancelBooking,
+    workerCancelBooking, getUserBookings, getWorkerBookings
 };
-
-
-module.exports={createBooking,updateBooking,userCancelBooking,workerCancelBooking,getUserBookings,getWorkerBookings}

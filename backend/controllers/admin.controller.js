@@ -1,4 +1,4 @@
-const userModel = require("../models/user.model");
+const userModel = require("../models/User.model");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const errorHandler = require("../middlewares/error.middleware");
@@ -37,7 +37,7 @@ const createAdmin = async (req, res) => {
             admin: newAdmin
         });
     } catch (error) {
-        errorHandler(error, req, res, next)
+        errorHandler(error, req, res);
     }
 }
 
@@ -64,7 +64,7 @@ const loginAdmin = async (req, res) => {
             token: token
         });
     } catch (error) {
-        errorHandler(error, req, res, next)
+        errorHandler(error, req, res);
     }
 }
 
@@ -73,7 +73,7 @@ const logoutAdmin = async (req, res) => {
         res.clearCookie("token");
         res.status(200).json({ message: "Admin logged out successfully" });
     } catch (error) {
-        errorHandler(error, req, res, next)
+        errorHandler(error, req, res);
     }
 }
 
@@ -102,7 +102,7 @@ const updateAdmin = async (req, res) => {
             admin: updatedAdmin
         });
     } catch (error) {
-        errorHandler(error, req, res, next)
+        errorHandler(error, req, res);
     }
 }
 
@@ -119,7 +119,7 @@ const deleteAdmin = async (req, res) => {
         await userModel.findByIdAndDelete(admin._id);
         res.status(200).json({ message: "Admin deleted successfully" });
     } catch (error) {
-        errorHandler(error, req, res, next)
+        errorHandler(error, req, res);
     }
 }
 
@@ -138,7 +138,7 @@ const getAdmin = async (req, res) => {
             admin: admin
         });
     } catch (error) {
-        errorHandler(error, req, res, next)
+        errorHandler(error, req, res);
     }
 }
 

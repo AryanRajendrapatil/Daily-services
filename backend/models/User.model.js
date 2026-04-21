@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 
+
 const userSchema = new mongoose.Schema({
     name:{
         type:String,
@@ -21,19 +22,24 @@ const userSchema = new mongoose.Schema({
     address:{
        latitude:{
         type:Number,
-        required:true
+        
        },
        longitude:{
         type:Number,
-        required:true
+        
        }
     },
     role:{
         type:String,
         enum:["client","admin","provider"],
         default:"client"
+    },
+    image:{
+        type:String,
+        required:true
     }
 });
 
 const User = mongoose.model("User", userSchema);
 
+module.exports = User;

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Worker = require("./worker.model");
-const User = require("./user.model");
+const User = require("./User.model");
 const Service = require("./worker.model");
 
 const reviewSchema = new mongoose.Schema({
@@ -17,15 +17,15 @@ const reviewSchema = new mongoose.Schema({
     serviceId:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"Service",
-        required:true
+        
     },
     rating:{
         type:Number,
-        required:true
+       
     },
     review:{
         type:String,
-        required:true
+        
     }
 });
 

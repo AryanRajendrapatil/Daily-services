@@ -2,243 +2,231 @@ const Worker = require("../models/worker.model");
 const errorHandler = require("../middlewares/error.middleware.js");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const upload = require("../middlewares/upload.middleware.js");
-const uploadToCloudinary = require("../middlewares/upload.middleware.js");
-const {loginToken}=require("../middlewares/auth.middleware");
-const dotenv=require("dotenv");
+const { upload, uploadToCloudinary } = require("../middlewares/upload.middleware.js");
+const { loginToken } = require("../middlewares/auth.middleware");
+const dotenv = require("dotenv");
+const fs = require("fs");
 
 dotenv.config();
 
-const createWorker=async(req,res)=>{
-    try{
-        const {name,email,password,serviceType,document,experience}=req.body;
-        const file=req.file;
-        const result=await uploadToCloudinary(file.path);
-        const adhar_card_front=await uploadToCloudinary(document.adhar_card_front).secure_url;
-        const adhar_card_back=await uploadToCloudinary(document.adhar_card_back).secure_url;
-        const photo=await uploadToCloudinary(document.photo).secure_url;
-       
-        if(!name || !email || !password){
-            return res.status(400).json({message:"All fields are required"});
+const createWorker = async (req, res) => {
+    try {
+        if (!req.body) {
+            return res.status(400).json({ message: "Request body is missing" });
         }
-        const worker=await Worker.findOne({email});
-        if(worker){
-            return res.status(400).json({message:"Worker already exists"});
+
+        const { name, email, password, phone, serviceType, experience, address } = req.body;
+        const files = req.files;
+
+        if (!name || !email || !password || !phone || !serviceType || !experience || !address) {
+            return res.status(400).json({ message: "All basic fields are required (name, email, password, phone, serviceType, experience, address)" });
         }
-        if(password.length<6){
-            return res.status(400).json({message:"Password must be at least 6 characters long"});
-        } 
-        if(!document.adhar_card_front || !document.adhar_card_back || !document.photo){
-            return res.status(400).json({message:"All documents are required"});
+
+        if (!files || !files.image) {
+            return res.status(400).json({ message: "Profile image is required" });
         }
-        if(!experience){
-            return res.status(400).json({message:"Experience is required"});
+
+        const workerExists = await Worker.findOne({ email });
+        if (workerExists) {
+            return res.status(400).json({ message: "Worker already exists" });
         }
-        if(!serviceType){
-            return res.status(400).json({message:"Service type is required"});
+
+        if (password.length < 6) {
+            return res.status(400).json({ message: "Password must be at least 6 characters long" });
         }
-        if(!address){
-            return res.status(400).json({message:"Address is required"});
-        }
-        if(!file){
-            return res.status(400).json({message:"Image is required"});
-        }
-        const salt=await bcryptjs.genSalt(10);
-        const hashedPassword=await bcryptjs.hash(password,salt);
-        const newWorker=new Worker({
+
+        // Upload files to Cloudinary
+        const profileImageResult = await uploadToCloudinary(files.image[0].path);
+
+        const adhar_card_front = files.adhar_card_front ? (await uploadToCloudinary(files.adhar_card_front[0].path)).secure_url : "";
+        const adhar_card_back = files.adhar_card_back ? (await uploadToCloudinary(files.adhar_card_back[0].path)).secure_url : "";
+        const photo = files.photo ? (await uploadToCloudinary(files.photo[0].path)).secure_url : "";
+
+
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPassword = await bcryptjs.hash(password, salt);
+
+        const newWorker = new Worker({
             name,
             email,
-            password:hashedPassword,
-            image:result.secure_url,
+            password: hashedPassword,
+            phone,
+            image: profileImageResult.secure_url,
             serviceType,
-            document:{
-                adhar_card_front:adhar_card_front,
-                adhar_card_back:adhar_card_back,
-                photo:photo
+            document: {
+                adhar_card_front,
+                adhar_card_back,
+                photo
             },
             experience,
             address
         });
+
         await newWorker.save();
         res.status(201).json({
-            message:"Worker created successfully",
-            worker:newWorker
-            
+            message: "Worker created successfully",
+            worker: newWorker
         });
-    }catch(error){
-        errorHandler(error,req,res,next)
+        fs.unlinkSync(files.image[0].path);
+        fs.unlinkSync(files.adhar_card_front[0].path);
+        fs.unlinkSync(files.adhar_card_back[0].path);
+        fs.unlinkSync(files.photo[0].path);
+    } catch (error) {
+        errorHandler(error, req, res);
     }
 }
 
-const loginWorker=async(req,res)=>{
-    try{
-        const {email,password}=req.body;
-        if(!email || !password){
-            return res.status(400).json({message:"All fields are required"});
+const loginWorker = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ message: "All fields are required" });
         }
-        const worker=await Worker.findOne({email});
-        if(!worker){
-            return res.status(400).json({message:"Worker not found"});
+        const worker = await Worker.findOne({ email });
+        if (!worker) {
+            return res.status(400).json({ message: "Worker not found" });
         }
-        const isPasswordValid=await bcryptjs.compare(password,worker.password);
-        if(!isPasswordValid){
-            return res.status(400).json({message:"Invalid password"});
+        const isPasswordValid = await bcryptjs.compare(password, worker.password);
+        if (!isPasswordValid) {
+            return res.status(400).json({ message: "Invalid password" });
         }
-        const token=jwt.sign({id:worker._id},process.env.JWT_SECRET,{expiresIn:"1h"});
-        loginToken(req,res,next);
-        res.cookie("token",token,{httpOnly:true,secure:true,sameSite:"strict",maxAge:3600000});
+        const token = jwt.sign({ id: worker._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        res.cookie("token", token, { httpOnly: true, secure: true, sameSite: "strict", maxAge: 3600000 });
         res.status(200).json({
-            message:"Worker logged in successfully",
-            worker:worker,
-            token:token
+            message: "Worker logged in successfully",
+            worker: worker,
+            token: token
         });
-    }catch(error){
-        errorHandler(error,req,res,next)
+    } catch (error) {
+        errorHandler(error, req, res);
     }
 }
 
-const logoutWorker=async(req,res)=>{
-    try{
+const logoutWorker = async (req, res) => {
+    try {
         res.clearCookie("token");
-        res.status(200).json({message:"Worker logged out successfully"});
-    }catch(error){
-        errorHandler(error,req,res,next)
+        res.status(200).json({ message: "Worker logged out successfully" });
+    } catch (error) {
+        errorHandler(error, req, res);
     }
 }
 
-const updateWorker=async(req,res)=>{
-    try{
-        const {name,email,password,serviceType,document,experience,address}=req.body;
-        const file=req.file;
-        const result=await uploadToCloudinary(file.path);
-        const adhar_card_front=await uploadToCloudinary(document.adhar_card_front).secure_url;
-        const adhar_card_back=await uploadToCloudinary(document.adhar_card_back).secure_url;
-        const photo=await uploadToCloudinary(document.photo).secure_url;
-       
-        if(!name || !email || !password){
-            return res.status(400).json({message:"All fields are required"});
+const updateWorker = async (req, res) => {
+    try {
+        const { name, email, password, serviceType, experience, address } = req.body;
+        const files = req.files;
+
+        const worker = await Worker.findOne({ email });
+        if (!worker) {
+            return res.status(400).json({ message: "Worker not found" });
         }
-        const worker=await Worker.findOne({email});
-        if(!worker){
-            return res.status(400).json({message:"Worker not found"});
+
+        let updateData = { ...req.body };
+
+        if (files && files.image) {
+            const result = await uploadToCloudinary(files.image[0].path);
+            updateData.image = result.secure_url;
         }
-        if(password.length<6){
-            return res.status(400).json({message:"Password must be at least 6 characters long"});
-        } 
-        if(!document.adhar_card_front || !document.adhar_card_back || !document.photo){
-            return res.status(400).json({message:"All documents are required"});
+
+        if (files && (files.adhar_card_front || files.adhar_card_back || files.photo)) {
+             // In a real app, you might want to merge these with existing document data
+             updateData.document = { ...worker.document };
+             if (files.adhar_card_front) {
+                updateData.document.adhar_card_front = (await uploadToCloudinary(files.adhar_card_front[0].path)).secure_url;
+             }
+             if (files.adhar_card_back) {
+                updateData.document.adhar_card_back = (await uploadToCloudinary(files.adhar_card_back[0].path)).secure_url;
+             }
+             if (files.photo) {
+                updateData.document.photo = (await uploadToCloudinary(files.photo[0].path)).secure_url;
+             }
         }
-        if(!experience){
-            return res.status(400).json({message:"Experience is required"});
+
+        if (password) {
+            const salt = await bcryptjs.genSalt(10);
+            updateData.password = await bcryptjs.hash(password, salt);
         }
-        if(!serviceType){
-            return res.status(400).json({message:"Service type is required"});
-        }
-        if(!address){
-            return res.status(400).json({message:"Address is required"});
-        }
-        if(!file){
-            return res.status(400).json({message:"Image is required"});
-        }
-        const salt=await bcryptjs.genSalt(10);
-        const hashedPassword=await bcryptjs.hash(password,salt);
-        const updatedWorker=await Worker.findByIdAndUpdate(worker._id,{
-            name,
-            email,
-            password:hashedPassword,
-            image:result.secure_url,
-            serviceType,
-            document:{
-                adhar_card_front:adhar_card_front,
-                adhar_card_back:adhar_card_back,
-                photo:photo
-            },
-            experience,
-            address
-        },{
-            new:true
-        });
+
+        const updatedWorker = await Worker.findByIdAndUpdate(worker._id, updateData, { new: true });
         res.status(200).json({
-            message:"Worker updated successfully",
-            worker:updatedWorker
+            message: "Worker updated successfully",
+            worker: updatedWorker
         });
-    }catch(error){
-        errorHandler(error,req,res,next)
+        fs.unlinkSync(files.image[0].path);
+        fs.unlinkSync(files.adhar_card_front[0].path);
+        fs.unlinkSync(files.adhar_card_back[0].path);
+        fs.unlinkSync(files.photo[0].path);
+    } catch (error) {
+        errorHandler(error, req, res);
     }
 }
 
-const deleteWorker=async(req,res)=>{
-    try{
-        const {email}=req.body;
-        if(!email){
-            return res.status(400).json({message:"Email is required"});
+const deleteWorker = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
         }
-        const worker=await Worker.findOne({email});
-        if(!worker){
-            return res.status(400).json({message:"Worker not found"});
+        const worker = await Worker.findOne({ email });
+        if (!worker) {
+            return res.status(400).json({ message: "Worker not found" });
         }
         await Worker.findByIdAndDelete(worker._id);
-        res.status(200).json({message:"Worker deleted successfully"});
-    }catch(error){
-        errorHandler(error,req,res,next)
+        res.status(200).json({ message: "Worker deleted successfully" });
+    } catch (error) {
+        errorHandler(error, req, res);
     }
 }
 
-
-
-const changePassword=async(req,res)=>{
-    try{
-        const {email,password}=req.body;
-        if(!email || !password){
-            return res.status(400).json({message:"All fields are required"});
+const changePassword = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ message: "All fields are required" });
         }
-        const worker=await Worker.findOne({email});
-        if(!worker){
-            return res.status(400).json({message:"Worker not found"});
+        const worker = await Worker.findOne({ email });
+        if (!worker) {
+            return res.status(400).json({ message: "Worker not found" });
         }
-        const isPasswordValid=await bcryptjs.compare(password,worker.password);
-        if(!isPasswordValid){
-            return res.status(400).json({message:"Invalid password"});
-        }
-        const salt=await bcryptjs.genSalt(10);
-        const hashedPassword=await bcryptjs.hash(password,salt);
-        const updatedWorker=await Worker.findByIdAndUpdate(worker._id,{password:hashedPassword},{new:true});
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPassword = await bcryptjs.hash(password, salt);
+        const updatedWorker = await Worker.findByIdAndUpdate(worker._id, { password: hashedPassword }, { new: true });
         res.status(200).json({
-            message:"Password changed successfully",
-            worker:updatedWorker
+            message: "Password changed successfully",
+            worker: updatedWorker
         });
-    }catch(error){
-        errorHandler(error,req,res,next)
+    } catch (error) {
+        errorHandler(error, req, res);
     }
 }
 
 const getAllWorkers = async (req, res) => {
-  try {
-    const workers = await Worker.find().select("-password");
-    res.status(200).json({ workers });
-  } catch (error) {
-    errorHandler(error,req,res,next)
-  }
+    try {
+        const workers = await Worker.find().select("-password");
+        res.status(200).json({ workers });
+    } catch (error) {
+        errorHandler(error, req, res);
+    }
 };
 
 const getWorkersByCategory = async (req, res) => {
-  try {
-    const { category } = req.params;
-    const workers = await Worker.find({ serviceType: category }).select("-password");
-    res.status(200).json({ workers });
-  } catch (error) {
-    errorHandler(error,req,res,next)
-  }
+    try {
+        const { category } = req.params;
+        const workers = await Worker.find({ serviceType: category }).select("-password");
+        res.status(200).json({ workers });
+    } catch (error) {
+        errorHandler(error, req, res);
+    }
 };
 
 const getWorkerById = async (req, res) => {
-  try {
-    const worker = await Worker.findById(req.params.id).select("-password");
-    if (!worker) return res.status(404).json({ message: "Worker not found" });
-    res.status(200).json({ worker });
-  } catch (error) {
-    errorHandler(error,req,res,next)
-  }
+    try {
+        const worker = await Worker.findById(req.params.id).select("-password");
+        if (!worker) return res.status(404).json({ message: "Worker not found" });
+        res.status(200).json({ worker });
+    } catch (error) {
+        errorHandler(error, req, res);
+    }
 };
 
 

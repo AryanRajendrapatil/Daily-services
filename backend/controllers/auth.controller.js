@@ -1,4 +1,4 @@
-const User = require("../models/user.model");
+const User = require("../models/User.model");
 const bcryptjs = require("bcryptjs");
 const authMiddleware = require("../middlewares/auth.middleware");
 
