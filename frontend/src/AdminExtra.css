@@ -1,0 +1,11 @@
+.category-breakdown { display: flex; flex-direction: column; gap: 10px; }
+.cat-breakdown-card {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 22px;
+}
+.cat-breakdown-info { flex: 1; }
+.cat-breakdown-name  { font-size: 13px; font-weight: 500; text-transform: capitalize; font-family: 'Outfit', sans-serif; }
+.cat-breakdown-count { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: 'Outfit', sans-serif; }
+.cat-bar-wrap { width: 130px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+.cat-bar { height: 100%; background: linear-gradient(90deg, var(--emerald), var(--sapphire)); border-radius: 2px; transition: width 0.6s ease; }
+.cat-pct { font-size: 12px; color: var(--emerald); font-weight: 600; width: 38px; text-align: right; font-family: 'Outfit', sans-serif; }
